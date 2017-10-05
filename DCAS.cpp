@@ -7,7 +7,7 @@
 using namespace std;
 
 const int board_size = 42;
-const int num_drones = 2;
+const int num_drones = 4;
 char board[board_size][board_size];
 volatile int drone_turn = 0;
 pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
@@ -40,12 +40,12 @@ int main(){
 	drone drone_a;
 	drone *drone_0;
 	drone_0 = &drone_a;
-	(*drone_0).current_x = 20;
-	(*drone_0).current_y = 1;
+	(*drone_0).current_x = 19;
+	(*drone_0).current_y = 20;
 	(*drone_0).img = 'A';
 	(*drone_0).dest_img = '0';
-	(*drone_0).final_x = 20;
-	(*drone_0).final_y = 35;
+	(*drone_0).final_x = 23;
+	(*drone_0).final_y = 20;
 	(*drone_0).id = 0;
 	drone_0->curr_pos_prev_img = ' ';
 	board[(*drone_0).current_x][(*drone_0).current_y] = (*drone_0).img;
@@ -56,26 +56,59 @@ int main(){
 	drone drone_b;
 	drone *drone_1;
 	drone_1 = &drone_b;
-	(*drone_1).current_x = 20;
-	(*drone_1).current_y = 40;
+	(*drone_1).current_x = 22;
+	(*drone_1).current_y = 22;
 	(*drone_1).img = 'B';
 	(*drone_1).dest_img = '1';
-	(*drone_1).final_x = 20;
-	(*drone_1).final_y = 15;
+	(*drone_1).final_x = 22;
+	(*drone_1).final_y = 18;
 	(*drone_1).id = 1;
 	drone_1->curr_pos_prev_img = ' ';
 	board[(*drone_1).current_x][(*drone_1).current_y] = (*drone_1).img;
 	board[(*drone_1).final_x][(*drone_1).final_y] = (*drone_1).dest_img;
 
+	drone drone_c;
+	drone *drone_2;
+	drone_2 = &drone_c;
+	(*drone_2).current_x = 24;
+	(*drone_2).current_y = 19;
+	(*drone_2).img = 'C';
+	(*drone_2).dest_img = '2';
+	(*drone_2).final_x = 20;
+	(*drone_2).final_y = 19;
+	(*drone_2).id = 2;
+	drone_2->curr_pos_prev_img = ' ';
+	board[(*drone_2).current_x][(*drone_2).current_y] = (*drone_2).img;
+	board[(*drone_2).final_x][(*drone_2).final_y] = (*drone_2).dest_img;
+
+
+
+	drone drone_d;
+	drone *drone_3;
+	drone_3 = &drone_d;
+	(*drone_3).current_x = 21;
+	(*drone_3).current_y = 17;
+	(*drone_3).img = 'D';
+	(*drone_3).dest_img = '3';
+	(*drone_3).final_x = 21;
+	(*drone_3).final_y = 21;
+	(*drone_3).id = 3;
+	drone_3->curr_pos_prev_img = ' ';
+	board[(*drone_3).current_x][(*drone_3).current_y] = (*drone_3).img;
+	board[(*drone_3).final_x][(*drone_3).final_y] = (*drone_3).dest_img;
 
 	printBoard();
-	pthread_t threads[2];
+	pthread_t threads[num_drones];
 
 
 	rc = pthread_create(&threads[0], NULL, activateDrone, (void *)drone_0);
 	rc = pthread_create(&threads[1], NULL, activateDrone, (void *)drone_1);
+	rc = pthread_create(&threads[2], NULL, activateDrone, (void *)drone_2);
+	rc = pthread_create(&threads[3], NULL, activateDrone, (void *)drone_3);
 	rc = pthread_join(threads[0],NULL);
 	rc = pthread_join(threads[1],NULL);
+	rc = pthread_join(threads[2],NULL);
+	rc = pthread_join(threads[3],NULL);
 	printBoard();
 	printf("completed");
 
@@ -94,20 +127,131 @@ void moveDrone(drone *drone_arg){
 	int drone_potential_y;
 	char drone_char = drone_arg->img;
 	char dest_char = drone_arg->dest_img;
+	int dir = rand() % 2;
 
-	// x arith
-	if (drone_current_x < drone_final_x){
-		drone_potential_x = drone_current_x + 1;
+	//start with x dir
+	if (dir == 0){
+		// x arith
+		if (drone_current_x < drone_final_x){
+			drone_potential_x = drone_current_x + 1;
+		}
+		else if(drone_current_x > drone_final_x){
+			drone_potential_x = drone_current_x - 1;
+		}
+		else{
+			drone_potential_x = drone_current_x;
+		}
+
+		//do y
+		if (drone_potential_x == drone_current_x){
+			// y arith
+			if (drone_current_y < drone_final_y){
+				drone_potential_y = drone_current_y + 1;
+			}
+			else if(drone_current_y > drone_final_y){
+				drone_potential_y = drone_current_y - 1;
+			}
+			else{
+				drone_potential_y = drone_current_y;
+			}
+
+			if (drone_potential_y == drone_current_y){
+				//do nothing?
+			}
+
+			else{
+				char potential_char = board [drone_current_x][drone_potential_y];
+				if ((potential_char == ' ') || (potential_char == dest_char) || ((potential_char < 64) && (potential_char > 47))){
+					board[drone_current_x][drone_current_y] = drone_arg->curr_pos_prev_img;
+					drone_arg->curr_pos_prev_img = board[drone_current_x][drone_potential_y];
+					board[drone_current_x][drone_potential_y] =drone_char;
+					drone_arg->current_x = drone_current_x;
+					drone_arg->current_y = drone_potential_y;
+				}
+				else{
+					if ((board[drone_current_x + 1][drone_current_y] == ' ') || ((potential_char < 64) && (potential_char > 47))){
+						board[drone_current_x][drone_current_y] = drone_arg->curr_pos_prev_img;
+						drone_arg->curr_pos_prev_img = board[drone_current_x+1][drone_current_y];
+						board[drone_current_x + 1][drone_current_y] =drone_char;
+						drone_arg->current_x = drone_current_x + 1;
+						drone_arg->current_y = drone_current_y;
+					}
+					else if ((board[drone_current_x - 1][drone_current_y] == ' ') || ((potential_char < 64) && (potential_char > 47))){
+						board[drone_current_x][drone_current_y] = drone_arg->curr_pos_prev_img;
+						drone_arg->curr_pos_prev_img = board[drone_current_x-1][drone_current_y];
+						board[drone_current_x - 1][drone_current_y] =drone_char;
+						drone_arg->current_x = drone_current_x - 1;
+						drone_arg->current_y = drone_current_y;
+					}
+					else if ((board[drone_current_x][drone_current_y - 1] == ' ') || ((potential_char < 64) && (potential_char > 47))){
+						board[drone_current_x][drone_current_y] = drone_arg->curr_pos_prev_img;
+						drone_arg->curr_pos_prev_img = board[drone_current_x][drone_current_y-1];
+						board[drone_current_x][drone_current_y - 1] =drone_char;
+						drone_arg->current_x = drone_current_x;
+						drone_arg->current_y = drone_current_y - 1;
+					}
+					else if ((board[drone_current_x][drone_current_y + 1] == ' ') || ((potential_char < 64) && (potential_char > 47))){
+						board[drone_current_x][drone_current_y] = drone_arg->curr_pos_prev_img;
+						drone_arg->curr_pos_prev_img = board[drone_current_x][drone_current_y+1];
+						board[drone_current_x][drone_current_y + 1] =drone_char;
+						drone_arg->current_x = drone_current_x;
+						drone_arg->current_y = drone_current_y + 1;
+					}
+					else{
+						//wait do nothing
+					}
+				}			
+			}
+		}
+		//do x
+		else{
+			char potential_char = board [drone_potential_x][drone_current_y];
+			
+			if ((potential_char == ' ') || (potential_char == dest_char) || ((potential_char < 64) && (potential_char > 47))){
+				board[drone_current_x][drone_current_y] = drone_arg->curr_pos_prev_img;
+				drone_arg->curr_pos_prev_img = board[drone_potential_x][drone_current_y];
+				board[drone_potential_x][drone_current_y] =drone_char;
+				drone_arg->current_x = drone_potential_x;
+				drone_arg->current_y = drone_current_y;
+			}
+			else{
+				if ((board[drone_current_x][drone_current_y - 1] == ' ') || ((potential_char < 64) && (potential_char > 47))){
+					board[drone_current_x][drone_current_y] = drone_arg->curr_pos_prev_img;
+					drone_arg->curr_pos_prev_img = board[drone_current_x][drone_current_y-1];
+					board[drone_current_x][drone_current_y - 1] =drone_char;
+					drone_arg->current_x = drone_current_x;
+					drone_arg->current_y = drone_current_y - 1;
+				}
+				else if((board[drone_current_x][drone_current_y + 1] == ' ') || ((potential_char < 64) && (potential_char > 47))){
+					board[drone_current_x][drone_current_y] = drone_arg->curr_pos_prev_img;
+					drone_arg->curr_pos_prev_img = board[drone_current_x][drone_current_y+1];
+					board[drone_current_x][drone_current_y + 1] =drone_char;
+					drone_arg->current_x = drone_current_x;
+					drone_arg->current_y = drone_current_y + 1;
+				}
+				else if((board[drone_current_x + 1][drone_current_y] == ' ') || ((potential_char < 64) && (potential_char > 47))){
+					board[drone_current_x][drone_current_y] = drone_arg->curr_pos_prev_img;
+					drone_arg->curr_pos_prev_img = board[drone_current_x+1][drone_current_y];
+					board[drone_current_x + 1][drone_current_y] =drone_char;
+					drone_arg->current_x = drone_current_x + 1;
+					drone_arg->current_y = drone_current_y;
+				}
+				else if((board[drone_current_x - 1][drone_current_y] == ' ') || ((potential_char < 64) && (potential_char > 47))){
+					board[drone_current_x][drone_current_y] = drone_arg->curr_pos_prev_img;
+					drone_arg->curr_pos_prev_img = board[drone_current_x-1][drone_current_y];
+					board[drone_current_x - 1][drone_current_y] =drone_char;
+					drone_arg->current_x = drone_current_x - 1;
+					drone_arg->current_y = drone_current_y;
+				}
+				else{
+					//wait do nothing
+				}
+			}
+		}
 	}
-	else if(drone_current_x > drone_final_x){
-		drone_potential_x = drone_current_x - 1;
-	}
+
+	//start with y dir
 	else{
-		drone_potential_x = drone_current_x;
-	}
-
-	//do y
-	if (drone_potential_x == drone_current_x){
 		// y arith
 		if (drone_current_y < drone_final_y){
 			drone_potential_y = drone_current_y + 1;
@@ -119,101 +263,113 @@ void moveDrone(drone *drone_arg){
 			drone_potential_y = drone_current_y;
 		}
 
+		//do x
 		if (drone_potential_y == drone_current_y){
-			//do nothing?
-		}
+			// y arith
+			if (drone_current_x < drone_final_x){
+				drone_potential_x = drone_current_x + 1;
+			}
+			else if(drone_current_x > drone_final_x){
+				drone_potential_x = drone_current_x - 1;
+			}
+			else{
+				drone_potential_x = drone_current_x;
+			}
 
+			if (drone_potential_x == drone_current_x){
+				//do nothing?
+			}
+
+			else{
+				char potential_char = board [drone_potential_x][drone_current_y];
+				if ((potential_char == ' ') || (potential_char == dest_char) || ((potential_char < 64) && (potential_char > 47))){
+					board[drone_current_x][drone_current_y] = drone_arg->curr_pos_prev_img;
+					drone_arg->curr_pos_prev_img = board[drone_potential_x][drone_current_y];
+					board[drone_potential_x][drone_current_y] =drone_char;
+					drone_arg->current_x = drone_potential_x;
+					drone_arg->current_y = drone_current_y;
+				}
+				else{
+					if ((board[drone_current_x + 1][drone_current_y] == ' ') || ((potential_char < 64) && (potential_char > 47))){
+						board[drone_current_x][drone_current_y] = drone_arg->curr_pos_prev_img;
+						drone_arg->curr_pos_prev_img = board[drone_current_x+1][drone_current_y];
+						board[drone_current_x + 1][drone_current_y] =drone_char;
+						drone_arg->current_x = drone_current_x + 1;
+						drone_arg->current_y = drone_current_y;
+					}
+					else if ((board[drone_current_x - 1][drone_current_y] == ' ') || ((potential_char < 64) && (potential_char > 47))){
+						board[drone_current_x][drone_current_y] = drone_arg->curr_pos_prev_img;
+						drone_arg->curr_pos_prev_img = board[drone_current_x-1][drone_current_y];
+						board[drone_current_x - 1][drone_current_y] =drone_char;
+						drone_arg->current_x = drone_current_x - 1;
+						drone_arg->current_y = drone_current_y;
+					}
+					else if ((board[drone_current_x][drone_current_y - 1] == ' ') || ((potential_char < 64) && (potential_char > 47))){
+						board[drone_current_x][drone_current_y] = drone_arg->curr_pos_prev_img;
+						drone_arg->curr_pos_prev_img = board[drone_current_x][drone_current_y-1];
+						board[drone_current_x][drone_current_y - 1] =drone_char;
+						drone_arg->current_x = drone_current_x;
+						drone_arg->current_y = drone_current_y - 1;
+					}
+					else if ((board[drone_current_x][drone_current_y + 1] == ' ') || ((potential_char < 64) && (potential_char > 47))){
+						board[drone_current_x][drone_current_y] = drone_arg->curr_pos_prev_img;
+						drone_arg->curr_pos_prev_img = board[drone_current_x][drone_current_y+1];
+						board[drone_current_x][drone_current_y + 1] =drone_char;
+						drone_arg->current_x = drone_current_x;
+						drone_arg->current_y = drone_current_y + 1;
+					}
+					else{
+						//wait do nothing
+					}
+				}			
+			}
+		}
+		//do y
 		else{
-			char potential_char = board [drone_potential_x][drone_potential_y];
+			char potential_char = board [drone_current_x][drone_potential_y];
+			
 			if ((potential_char == ' ') || (potential_char == dest_char) || ((potential_char < 64) && (potential_char > 47))){
 				board[drone_current_x][drone_current_y] = drone_arg->curr_pos_prev_img;
-				drone_arg->curr_pos_prev_img = board[drone_potential_x][drone_potential_y];
-				board[drone_potential_x][drone_potential_y] =drone_char;
-				drone_arg->current_x = drone_potential_x;
+				drone_arg->curr_pos_prev_img = board[drone_current_x][drone_potential_y];
+				board[drone_current_x][drone_potential_y] =drone_char;
+				drone_arg->current_x = drone_current_x;
 				drone_arg->current_y = drone_potential_y;
 			}
 			else{
-				if ((board[drone_current_x + 1][drone_current_y] == ' ') || ((potential_char < 64) && (potential_char > 47))){
-					board[drone_current_x][drone_current_y] = drone_arg->curr_pos_prev_img;
-					drone_arg->curr_pos_prev_img = board[drone_current_x+1][drone_current_y];
-					board[drone_current_x + 1][drone_current_y] =drone_char;
-					drone_arg->current_x = drone_current_x + 1;
-					drone_arg->current_y = drone_current_y;
-				}
-				else if ((board[drone_current_x - 1][drone_current_y] == ' ') || ((potential_char < 64) && (potential_char > 47))){
-					board[drone_current_x][drone_current_y] = drone_arg->curr_pos_prev_img;
-					drone_arg->curr_pos_prev_img = board[drone_current_x-1][drone_current_y];
-					board[drone_current_x - 1][drone_current_y] =drone_char;
-					drone_arg->current_x = drone_current_x - 1;
-					drone_arg->current_y = drone_current_y;
-				}
-				else if ((board[drone_current_x][drone_current_y - 1] == ' ') || ((potential_char < 64) && (potential_char > 47))){
+				if ((board[drone_current_x][drone_current_y - 1] == ' ') || ((potential_char < 64) && (potential_char > 47))){
 					board[drone_current_x][drone_current_y] = drone_arg->curr_pos_prev_img;
 					drone_arg->curr_pos_prev_img = board[drone_current_x][drone_current_y-1];
 					board[drone_current_x][drone_current_y - 1] =drone_char;
 					drone_arg->current_x = drone_current_x;
 					drone_arg->current_y = drone_current_y - 1;
 				}
-				else if ((board[drone_current_x][drone_current_y + 1] == ' ') || ((potential_char < 64) && (potential_char > 47))){
+				else if((board[drone_current_x][drone_current_y + 1] == ' ') || ((potential_char < 64) && (potential_char > 47))){
 					board[drone_current_x][drone_current_y] = drone_arg->curr_pos_prev_img;
 					drone_arg->curr_pos_prev_img = board[drone_current_x][drone_current_y+1];
 					board[drone_current_x][drone_current_y + 1] =drone_char;
 					drone_arg->current_x = drone_current_x;
 					drone_arg->current_y = drone_current_y + 1;
 				}
+				else if((board[drone_current_x + 1][drone_current_y] == ' ') || ((potential_char < 64) && (potential_char > 47))){
+					board[drone_current_x][drone_current_y] = drone_arg->curr_pos_prev_img;
+					drone_arg->curr_pos_prev_img = board[drone_current_x+1][drone_current_y];
+					board[drone_current_x + 1][drone_current_y] =drone_char;
+					drone_arg->current_x = drone_current_x + 1;
+					drone_arg->current_y = drone_current_y;
+				}
+				else if((board[drone_current_x - 1][drone_current_y] == ' ') || ((potential_char < 64) && (potential_char > 47))){
+					board[drone_current_x][drone_current_y] = drone_arg->curr_pos_prev_img;
+					drone_arg->curr_pos_prev_img = board[drone_current_x-1][drone_current_y];
+					board[drone_current_x - 1][drone_current_y] =drone_char;
+					drone_arg->current_x = drone_current_x - 1;
+					drone_arg->current_y = drone_current_y;
+				}
 				else{
 					//wait do nothing
 				}
-			}			
-		}
-
+			}
+		}		
 	}
-	//do x
-	else{
-		char potential_char = board [drone_potential_x][drone_current_y];
-		// printf("%c %c %d %d",potential_char, dest_char, drone_potential_x, drone_current_y);
-		if ((potential_char == ' ') || (potential_char == dest_char) || ((potential_char < 64) && (potential_char > 47))){
-			board[drone_current_x][drone_current_y] = drone_arg->curr_pos_prev_img;
-			drone_arg->curr_pos_prev_img = board[drone_potential_x][drone_current_y];
-			board[drone_potential_x][drone_current_y] =drone_char;
-			drone_arg->current_x = drone_potential_x;
-			drone_arg->current_y = drone_current_y;
-		}
-		else{
-			if ((board[drone_current_x][drone_current_y - 1] == ' ') || ((potential_char < 64) && (potential_char > 47))){
-				board[drone_current_x][drone_current_y] = drone_arg->curr_pos_prev_img;
-				drone_arg->curr_pos_prev_img = board[drone_current_x][drone_current_y-1];
-				board[drone_current_x][drone_current_y - 1] =drone_char;
-				drone_arg->current_x = drone_current_x;
-				drone_arg->current_y = drone_current_y - 1;
-			}
-			else if((board[drone_current_x][drone_current_y + 1] == ' ') || ((potential_char < 64) && (potential_char > 47))){
-				board[drone_current_x][drone_current_y] = drone_arg->curr_pos_prev_img;
-				drone_arg->curr_pos_prev_img = board[drone_current_x][drone_current_y+1];
-				board[drone_current_x][drone_current_y + 1] =drone_char;
-				drone_arg->current_x = drone_current_x;
-				drone_arg->current_y = drone_current_y + 1;
-			}
-			else if((board[drone_current_x + 1][drone_current_y] == ' ') || ((potential_char < 64) && (potential_char > 47))){
-				board[drone_current_x][drone_current_y] = drone_arg->curr_pos_prev_img;
-				drone_arg->curr_pos_prev_img = board[drone_current_x+1][drone_current_y];
-				board[drone_current_x + 1][drone_current_y] =drone_char;
-				drone_arg->current_x = drone_current_x + 1;
-				drone_arg->current_y = drone_current_y;
-			}
-			else if((board[drone_current_x - 1][drone_current_y] == ' ') || ((potential_char < 64) && (potential_char > 47))){
-				board[drone_current_x][drone_current_y] = drone_arg->curr_pos_prev_img;
-				drone_arg->curr_pos_prev_img = board[drone_current_x-1][drone_current_y];
-				board[drone_current_x - 1][drone_current_y] =drone_char;
-				drone_arg->current_x = drone_current_x - 1;
-				drone_arg->current_y = drone_current_y;
-			}
-			else{
-				//wait do nothing
-			}
-		}
-	}
-
 }
 
 void *activateDrone(void *drone_arg){
@@ -228,10 +384,10 @@ void *activateDrone(void *drone_arg){
 			moveDrone(cur_drone);
 			// usleep(1000000);
 			printBoard();
-			drone_turn++;
-			printf("%d\n",drone_turn);
+			// drone_turn++;
+			// printf("%d\n",drone_turn);
 			pthread_mutex_unlock(&lock);
-			usleep(1000000);
+			usleep(500000);
 		// }
 		// else{
 		// 	drone_turn;
@@ -244,13 +400,6 @@ void *activateDrone(void *drone_arg){
 	printf("Exiting Thread id: %d \n", cur_drone_id );
 	usleep(10000000);
 	pthread_exit(NULL);
-	//loop
-
-	//mutex lock
-	//move drone
-	//increment turn
-	//mutex unlock
-
 }
 
 void instantiateBoard(){
@@ -281,9 +430,7 @@ void printBoard(){
 
 
 void printDrone(drone *drone_arg){
-	// drone *drone2;
-	// drone2 = drone_arg;
-	// (*drone_arg).current_x = (*drone_arg).current_x + 1;
+
 	int x = (*drone_arg).current_x;
 	int y = (*drone_arg).current_y;
 	int fx = (*drone_arg).final_x;
