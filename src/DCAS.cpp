@@ -5,6 +5,7 @@
 #include <unistd.h>
 #include <time.h>
 #include <queue>
+#include <string>
 
 using namespace std;
 //Global Variables
@@ -43,10 +44,12 @@ void instantiateBoard();
 void *activateDrone(void *drone_arg);
 
 int main(){
-
+	printf("Hello\n");
 	int rc;
 	instantiateBoard();
+	string input;
 	int demo;
+	char temp;
 	bool prompt_flag = true;
 	while (prompt_flag){
 		printf ("Welcome to DCAS simulator\nPlease select a drone case to run by pressing a number then hit the enter key\n");
@@ -56,13 +59,19 @@ int main(){
 		printf ("[3] - Run the simulator deploying drones from an airport to deliver packages\n");
 		printf ("[4] - Run the simulator to continuously deploy the drones (MAX 10) from the airport to deliver packages\n");
 		printf ("Press the [ctrl] AND [c] keys together to exit anytime during the simulations\n");
-		scanf("%d",&demo);
-		if ((demo < 5)&&(demo >= 0)){
+		cin >> input;
+		printf("%d\n",input);
+		temp = input.at(0);
+		printf("%c\n", temp);
+		if (((temp < 53)&&(temp >= 48))&&(input.length() == 1)){
 			prompt_flag = false;
 		}
 	}
-	srand (time(NULL));
 
+	demo = temp - 48;
+	printf("demo: %d\n",demo);
+	srand (time(NULL));
+	
 	switch(demo){
 		case 0:
 			
