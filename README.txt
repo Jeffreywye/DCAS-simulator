@@ -10,7 +10,6 @@ run : compiles the code AND runs the executable that was produced by the compila
 
 clean : removes the executable run.exe
 
-capture : 
 
 
 

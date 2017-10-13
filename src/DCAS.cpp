@@ -20,6 +20,7 @@ queue<int> available_drones;
 int airport_x;
 int airport_y;
 bool timer_bool = true;
+// drone struct
 struct drone
 {
 	int current_x;
@@ -58,13 +59,14 @@ int main(){
 	int demo;
 	char temp;
 	bool prompt_flag = true;
+	// Explain program and promt user for input
 	while (prompt_flag){
 		printf ("Welcome to DCAS simulator\nPlease select a drone case to run by pressing a number then hit the enter key\n");
 		printf ("[0] - Run the simulator spawning 10 drones at random locations\n");
 		printf ("[1] - Run the 4 drone collision simulator\n");
 		printf ("[2] - Run the 2 drone vertical collision simulator\n");
-		printf ("[3] - Run the simulator deploying drones from an airport to deliver packages\n");
-		printf ("[4] - Run the simulator to continuously deploy the drones (MAX 10) from the airport to deliver packages\n");
+		printf ("[3] - Run the simulator deploying drones from an airport 'X' to deliver packages\n");
+		printf ("[4] - Run the simulator to continuously deploy the drones (MAX 10) from the airport 'X' to deliver packages\n");
 		printf ("Press the [ctrl] AND [c] keys together to exit anytime during the simulations\n");
 		cin >> input;
 		temp = input.at(0);
@@ -75,6 +77,7 @@ int main(){
 
 	demo = temp - 48;
 	srand (time(NULL));
+	// run the case the user specified
 	switch(demo){
 		case 0:
 			
@@ -94,6 +97,7 @@ int main(){
 				placeDroneOnBoard(&drone_data[i]);
 				// printDrone(&drone_data[i]);
 				rc = pthread_create(&demo0_threads[i], NULL, activateDrone, (void *) &drone_data[i]);
+				usleep(500000);
 			}
 
 			for (int i = 0; i<10; i++){
@@ -106,7 +110,7 @@ int main(){
 			drone drone_a;
 			drone *drone_0;
 			drone_0 = &drone_a;
-			(*drone_0).current_x = 17;
+			(*drone_0).current_x = 7;
 			(*drone_0).current_y = 20;
 			(*drone_0).img = 'A';
 			(*drone_0).dest_img = '0';
@@ -122,7 +126,7 @@ int main(){
 			drone *drone_1;
 			drone_1 = &drone_b;
 			(*drone_1).current_x = 22;
-			(*drone_1).current_y = 24;
+			(*drone_1).current_y = 34;
 			(*drone_1).img = 'B';
 			(*drone_1).dest_img = '1';
 			(*drone_1).final_x = 22;
@@ -136,7 +140,7 @@ int main(){
 			drone drone_c;
 			drone *drone_2;
 			drone_2 = &drone_c;
-			(*drone_2).current_x = 26;
+			(*drone_2).current_x = 36;
 			(*drone_2).current_y = 19;
 			(*drone_2).img = 'C';
 			(*drone_2).dest_img = '2';
@@ -152,7 +156,7 @@ int main(){
 			drone *drone_3;
 			drone_3 = &drone_d;
 			(*drone_3).current_x = 21;
-			(*drone_3).current_y = 15;
+			(*drone_3).current_y = 5;
 			(*drone_3).img = 'D';
 			(*drone_3).dest_img = '3';
 			(*drone_3).final_x = 21;
@@ -170,8 +174,11 @@ int main(){
 
 			rc = pthread_create(&demo1_time_thread[0],NULL, activateTimer, NULL);
 			rc = pthread_create(&demo1_threads[0], NULL, activateDrone, (void *)drone_0);
+			usleep(500000);
 			rc = pthread_create(&demo1_threads[1], NULL, activateDrone, (void *)drone_1);
+			usleep(500000);
 			rc = pthread_create(&demo1_threads[2], NULL, activateDrone, (void *)drone_2);
+			usleep(500000);
 			rc = pthread_create(&demo1_threads[3], NULL, activateDrone, (void *)drone_3);
 			rc = pthread_join(demo1_threads[0],NULL);
 			rc = pthread_join(demo1_threads[1],NULL);
@@ -220,6 +227,7 @@ int main(){
 
 			rc = pthread_create(&demo2_time_thread[0],NULL, activateTimer, NULL);
 			rc = pthread_create(&demo2_threads[0], NULL, activateDrone, (void *)drone_4);
+			usleep(500000);
 			rc = pthread_create(&demo2_threads[1], NULL, activateDrone, (void *)drone_5);
 			rc = pthread_join(demo2_threads[0],NULL);
 			rc = pthread_join(demo2_threads[1],NULL);
@@ -286,24 +294,21 @@ int main(){
 			break;
 	}
 
-	
-
 	printBoard();
 	printf("completed");
-
-
 	return 0;
 }
 
+// timer thread method that prints out the board every 0.25 sec
 void *activateTimer(void *unused){
 	while(timer_bool){
-		// printf("hello\n");
-		usleep(250000);
+		usleep(125000);
 		printBoard();
 	}
 		pthread_exit(NULL);
 }
 
+// instantaiate the 2d semaphore array
 void instantiateSemBoard(){
 	for (int i =0; i<board_size; i++){
 		sem_init(&sem_board[(board_size - board_size)][i], 0, 0);
@@ -320,6 +325,7 @@ void instantiateSemBoard(){
 	}
 }
 
+// randomly place an airport on the ascii board
 void placeAirport(){
 	bool airport_loc_set = false;
 	while(!airport_loc_set){
@@ -332,20 +338,12 @@ void placeAirport(){
 	}
 }
 
+// place drone on top of the airport if the area is free (semaphore unlocked) else wait till its free
+// also assign the drone a random delivery location
 void deployDroneFromAirport(drone *drone_arg){
 	bool airport_free = false;
 	bool drone_dest_set = false;
 
-	// while (!airport_free){
-
-	// 	if (board[airport_x][airport_y]== 'X'){
-	// 		airport_free = true;
-	// 		drone_arg->current_x = airport_x;
-	// 		drone_arg->current_y = airport_y;
-	// 		drone_arg->curr_pos_prev_img = 'X';
-	// 		board[airport_x][airport_y] = drone_arg->img;
-	// 	}
-	// }
 	sem_wait(&sem_board[airport_x][airport_y]);
 	drone_arg->current_x = airport_x;
 	drone_arg->current_y = airport_y;
@@ -365,6 +363,9 @@ void deployDroneFromAirport(drone *drone_arg){
 	}
 }
 
+
+// randomly place drones on random locations on the board and lock the corresponding loactions on the semaphore board
+// also assign the drone a random delivery location
 void placeDroneOnBoard(drone *drone_arg){
 	bool drone_loc_set = false;
 	bool drone_dest_set = false;
@@ -380,7 +381,6 @@ void placeDroneOnBoard(drone *drone_arg){
 		}
 	}
 
-
 	while (!drone_dest_set){
 		int drone_dest_x = rand() % 40 + 1;
 		int drone_dest_y = rand() % 40 + 1;
@@ -395,7 +395,7 @@ void placeDroneOnBoard(drone *drone_arg){
 
 }
 
-// potential lock placement in this method
+// this method describes the logic for handling collisions and drone movements
 void moveDrone(drone *drone_arg){
 
 	drone *cur_moving_drone = (drone *) drone_arg;
@@ -407,7 +407,7 @@ void moveDrone(drone *drone_arg){
 	int drone_potential_y;
 	char drone_char = drone_arg->img;
 	char dest_char = drone_arg->dest_img;
-	srand (time(NULL));
+	// srand (time(NULL));
 	int dir = rand() % 2;
 
 	//start with x dir
@@ -605,7 +605,7 @@ void moveDrone(drone *drone_arg){
 	}
 }
 
-
+// the actual assignments, semaphore unlocks and the changing of drone locations on the ascii board and semaphore board
 void actuallyMoveDrone(drone *drone_arg, int potential_x, int potential_y){
 	board[drone_arg->current_x][drone_arg->current_y] = drone_arg->curr_pos_prev_img;
 	sem_post(&sem_board[drone_arg->current_x][drone_arg->current_y]);
@@ -615,41 +615,40 @@ void actuallyMoveDrone(drone *drone_arg, int potential_x, int potential_y){
 	drone_arg->current_y = potential_y;
 }
 
+// the drone thread method that runs during the drones lifetime of delivering the package and returning to the airport
 void *activateDrone(void *drone_arg){
 	drone *cur_drone = (drone *)drone_arg;
-	int cur_drone_id = cur_drone->id;
+	int cur_drone_id = cur_drone->id; 
 
+	srand(time(NULL));
 	while (((cur_drone->current_x)!=(cur_drone->final_x)) || ((cur_drone->current_y)!=(cur_drone->final_y))){
-		// usleep(500000);
-		// pthread_mutex_lock(&lock);
-		// usleep(100000);
 		moveDrone(cur_drone);
-		usleep(500000);
-		// printBoard();
-		// pthread_mutex_unlock(&lock);
+		// srand (time(NULL));
+		int delay = rand() % 4 + 1;
+		delay = delay * 250000;
+		// printf("id: %d delay: %d\n",cur_drone_id,delay); 
+		usleep(delay);
 	}
-	// board[(cur_drone->current_x)][(cur_drone->current_y)] = ' ';
 	cur_drone->final_x = airport_x;
 	cur_drone->final_y = airport_y;
 	cur_drone->dest_img = 'X';
 	cur_drone->curr_pos_prev_img = ' ';
 
 	while (((cur_drone->current_x)!=(cur_drone->final_x)) || ((cur_drone->current_y)!=(cur_drone->final_y))){
-		// usleep(500000);
-		// pthread_mutex_lock(&lock);
-		// usleep(100000);
 		moveDrone(cur_drone);
-		usleep(500000);
-		// printBoard();
-		// pthread_mutex_unlock(&lock);
+		// srand (time(NULL));
+		int delay = rand() % 4 + 1;
+		delay = delay * 250000;
+		// printf("id: %d delay: %d\n",cur_drone_id,delay); 
+		usleep(delay);
 	}
 	board[(cur_drone->current_x)][(cur_drone->current_y)] = 'X';
 	sem_post(&sem_board[cur_drone->current_x][cur_drone->current_y]);
 	available_drones.push((cur_drone->id));
-
 	pthread_exit(NULL);
 }
 
+// instantiate the ascii board to be empty
 void instantiateBoard(){
 	for (int i =0; i<board_size; i++){
 		board[(board_size - board_size)][i] = '-';
@@ -666,6 +665,7 @@ void instantiateBoard(){
 	}
 }
 
+// print the board
 void printBoard(){
 	for (int x = 0; x < board_size; x++){
 		for (int y = 0; y < board_size; y++){
@@ -676,7 +676,7 @@ void printBoard(){
 }
 
 
-
+// irrelevant method that prints drone information
 void printDrone(drone *drone_arg){
 
 	int x = (*drone_arg).current_x;

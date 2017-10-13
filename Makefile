@@ -9,5 +9,3 @@ run:
 
 clean:
 	rm -f run.exe
-
-capture:
